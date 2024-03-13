@@ -29,6 +29,9 @@ app.use("/rest/auth", authController);
 import { router as productController } from "./src/controller/product.controller";
 app.use("/rest/product", productController);
 
+import { router as purchaseController } from "./src/controller/purchase.controller";
+app.use("/rest/purchase", purchaseController);
+
 import { router as imageController } from "./src/controller/image.controller";
 app.use("/rest/image", imageController);
 

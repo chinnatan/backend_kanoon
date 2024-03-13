@@ -1,6 +1,6 @@
 import winston from "winston"
 
-const { splat, combine, timestamp, printf } = winston.format;
+const { splat, combine, timestamp, printf, colorize } = winston.format;
 
 // meta param is ensured by splat()
 const myFormat = printf(({ timestamp, level, message, meta }) => {
@@ -10,6 +10,7 @@ const myFormat = printf(({ timestamp, level, message, meta }) => {
 export const loggerUtil = winston.createLogger({
     format: combine(
         timestamp(),
+        colorize(),
         splat(),
         myFormat
     ),

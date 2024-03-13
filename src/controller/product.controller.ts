@@ -11,7 +11,6 @@ router.use(bodyParser.json());
 
 router.post("/add", middleware, productService.addProduct);
 router.post("/:product_id/stock/add", middleware, productService.addProductStock);
-router.post("/purchase", middleware, productService.purchase);
 
 router.get("/store/:id", middleware, productService.getProducts);
 router.get("/store/:id/total", middleware, productService.getProductsTotal);
