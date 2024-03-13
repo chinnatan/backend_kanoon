@@ -76,22 +76,19 @@ export class ProductService {
       }
 
       const { product_id } = req.params;
-      const { amount } = req.body;
-      if (!product_id || !amount) {
+      const { qty } = req.body;
+      if (!product_id || !qty) {
         throw new InvalidDataException("กรุณากรอกข้อมูลสินค้าให้ครบถ้วน");
       }
 
-      const queryaddProductStock = {
-        text: `insert into products_history (product_id, qty, qty_remaining, create_by) values ($1, $2, $3, $4)`,
-        values: [product_id, amount, amount, req.user?.id],
-      };
-      const inserted = await client
-        .query(queryaddProductStock)
-        .then((result) => {
-          return result.rowCount;
-        });
-
-      loggerUtil.info(`inserted product stock ${inserted} row`);
+      if (req.user != null) {
+        await ProductDAO.addProductStock(
+          client,
+          Number.parseInt(product_id),
+          qty,
+          req.user?.id
+        );
+      }
 
       h.handleSuccess(new MessageResponse(true, "เพิ่มสต็อกสำเร็จ"));
     } catch (err: any) {

@@ -77,6 +77,25 @@ export default class ProductDAO {
     return listProductStocks;
   }
 
+  static async addProductStock(client: PoolClient, productId: number, qty:number, userId:number) {
+    try {
+      const queryaddProductStock = {
+        text: `insert into products_history (product_id, qty, qty_remaining, create_by) values ($1, $2, $3, $4)`,
+        values: [productId, qty, qty, userId],
+      };
+
+      const inserted = await client
+        .query(queryaddProductStock)
+        .then((result) => {
+          return result.rowCount;
+        });
+
+      loggerUtil.info(`inserted product stock ${inserted} row`);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async updateProductStock(
     client: PoolClient,
     stockId: number,
