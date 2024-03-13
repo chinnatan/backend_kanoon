@@ -14,6 +14,8 @@ import ProductStock from "../model/product/product_stock.model";
 import StockQueue from "../model/product/stock_queue.model";
 import { raw } from "body-parser";
 import Stock from "../model/product/stock.model";
+import PurchaseDAO from "./dao/purchase.dao";
+import { cli } from "winston/lib/winston/config";
 
 export class ProductService {
   async addProduct(req: Request, res: Response) {
@@ -190,8 +192,6 @@ export class ProductService {
         }
       }
 
-      console.log(listProductStocks);
-
       const stockQueue = new StockQueue<number>(listProductStocks.length);
 
       // เติมสินค้าลงในคิว FIFO
@@ -203,51 +203,73 @@ export class ProductService {
         }
       }
 
-      console.log(stockQueue);
+      if (stockQueue.isEmpty()) {
+        throw new InvalidDataException("สินค้าไม่เพียงพอ");
+      }
+
+      // === เก็บข้อมูล order === //
+      let purchaseId = await PurchaseDAO.addPurchase(client, req.user?.id ?? 0);
+      for (const order of orders) {
+        if (purchaseId === -1) {
+          throw new InvalidDataException("บันทึกข้อมูลไม่สำเร็จ");
+        }
+
+        await PurchaseDAO.addPurchaseHistory(
+          client,
+          purchaseId,
+          order.product_id,
+          order.qty
+        );
+      }
 
       const remainingStock: Stock[] = [];
 
       // ตัดสต็อกตามคิว FIFO
       for (const order of orders) {
-        console.log(`order product id ${order.product_id}`);
         while (!stockQueue.isEmpty() && order.qty > 0) {
           const currStockId = stockQueue.dequeue()!;
-          const currentProductId = listProductStocks.find(
-            (item) => item.productId === order.product_id
-          )!.productId;
+          const currProductId =
+            listProductStocks.find(
+              (item) => item.productId === order.product_id
+            )?.productId ?? -1;
           const currentStock = listProductStocks.find(
             (item) => item.id === currStockId
           )!;
 
-          if (currentStock.productId == currentProductId) {
-            if (currentStock.qtyRemaining > 0 && order.qty_remaining > 0) {
-              // สินค้ามีเพียงพอ
-              currentStock.qtyRemaining -= order.qty_remaining;
-              console.log(
-                `currentStock : ${currentStock.id} | ${currentStock.qtyRemaining}`
-              );
-              if (currentStock.qtyRemaining <= 0) {
+          if (currProductId === -1) {
+            throw new InvalidDataException("สินค้าไม่เพียงพอ");
+          }
+
+          if (currentStock.productId == currProductId) {
+            // === จำนวนสินค้าทั้งหมด === //
+            let totalStock = 0;
+            listProductStocks.forEach((item) => {
+              if (item.productId === currProductId) {
+                totalStock += item.qtyRemaining;
+              }
+            });
+
+            if (totalStock < order.qty) {
+              throw new InvalidDataException("สินค้าไม่เพียงพอ");
+            }
+
+            if (currentStock.qtyRemaining > 0 && order.qty > 0) {
+              let stockRemaining = currentStock.qtyRemaining - order.qty;
+              let orderRemaining = order.qty - currentStock.qtyRemaining;
+
+              if (stockRemaining <= 0) {
                 remainingStock.push(new Stock(currStockId, 0));
-                order.qty_remaining = order.qty - Math.abs(currentStock.qtyRemaining);
               } else {
-                remainingStock.push(
-                  new Stock(currStockId, currentStock.qtyRemaining)
-                );
-                order.qty_remaining -= Math.abs(currentStock.qtyRemaining);
+                remainingStock.push(new Stock(currStockId, stockRemaining));
               }
 
-              console.log(`currStock remaining ${currentStock.qtyRemaining}`);
+              order.qty = orderRemaining;
             }
-            //  else {
-            //   // สินค้าไม่เพียงพอ
-            //   order.qty -= currentStock.qtyRemaining;
-            //   remainingStock.push(new Stock(currStockId, 0));
-            // }
           }
         }
       }
 
-      console.log(remainingStock);
+      // === อัพเดทสต็อกสินค้า === //
       for (const remain of remainingStock) {
         await ProductDAO.updateProductStock(
           client,
@@ -258,7 +280,7 @@ export class ProductService {
       }
 
       await client.query("COMMIT");
-      h.handleSuccess(new MessageResponse(true, "ชำระเงินสำเร็จ"));
+      h.handleSuccess(new MessageResponse(true, "บันทึกข้อมูลสำเร็จ"));
     } catch (err: any) {
       await client.query("ROLLBACK");
       loggerUtil.error(err);

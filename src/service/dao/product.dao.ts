@@ -1,8 +1,46 @@
 import { PoolClient } from "pg";
-import ProductStock from "../../model/product/product_stock.model"
+import ProductStock from "../../model/product/product_stock.model";
 import { loggerUtil } from "../../util/logger.util";
+import Product from "../../model/product/product.model";
 
 export default class ProductDAO {
+  static async getProductInfo(
+    client: PoolClient,
+    productId: number
+  ): Promise<Product | null> {
+    let product: Product | null = null;
+    try {
+      const queryGetProducts = {
+        text: `select p.id, p.product_name, p.product_desc, p.product_image, p.product_price
+                from products p 
+                where p.id = $1`,
+        values: [productId],
+      };
+
+      let raw = await client
+        .query(queryGetProducts)
+        .then((result) => {
+          return result.rows;
+        })
+        .catch((error) => {
+          throw new Error(error);
+        });
+
+      if (raw.length > 0) {
+        product = new Product(
+          raw[0].id,
+          raw[0].product_name,
+          raw[0].product_desc,
+          raw[0].product_image,
+          raw[0].product_price
+        );
+      }
+    } catch (error) {
+      throw error;
+    }
+    return product;
+  }
+
   static async getAllStockByProductId(
     client: PoolClient,
     productId: number
