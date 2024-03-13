@@ -113,15 +113,11 @@ export class ProductService {
       }
 
       const { id } = req.params;
-      const queryGetProducts = {
-        text: `select p.id, p.product_name, p.product_desc, p.product_image, p.product_price
-                from products p 
-                where p.store_id = $1`,
-        values: [id],
-      };
-      const raw = await client.query(queryGetProducts).then((result) => {
-        return result.rows;
-      });
+      
+      const raw = await ProductDAO.getProductByStoreId(
+        client,
+        Number.parseInt(id)
+      );
 
       if (raw.length === 0) {
         throw new DataNotFoundException("ไม่พบรายการสินค้า");
@@ -135,7 +131,8 @@ export class ProductService {
             product.product_name,
             product.product_desc,
             product.product_image,
-            product.product_price
+            Number.parseFloat(product.product_price),
+            Number.parseInt(product.qty_remaining)
           )
         );
       });
@@ -153,6 +150,15 @@ export class ProductService {
     const h = new HandleService("getProductsTotal", req, res);
     const client = await pool.connect();
     try {
+      if (
+        !AuthUtil.isHavePermission(
+          PermissionsConstant.VIEW_PRODUCT,
+          req.permissions ?? []
+        )
+      ) {
+        throw new ForbiddenException("คุณไม่มีสิทธิ์เพิ่มดูสินค้า");
+      }
+
       const { id } = req.params;
       const queryProductsTotal = {
         text: `select count(*) as total from products p where p.store_id = $1`,

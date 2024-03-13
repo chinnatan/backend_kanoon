@@ -4,6 +4,30 @@ import { loggerUtil } from "../../util/logger.util";
 import Product from "../../model/product/product.model";
 
 export default class ProductDAO {
+  static async getProductByStoreId(client: PoolClient, productId: number) {
+    try {
+      const queryGetProducts = {
+        text: `select p.id, p.product_name, p.product_desc, p.product_image, p.product_price,
+                  (select sum(qty_remaining) from products_history ph where ph.product_id = p.id) as qty_remaining
+              from products p
+              where p.store_id = $1
+              order by p.id asc`,
+        values: [productId],
+      };
+      const rawProducts = await client
+        .query(queryGetProducts)
+        .then((result) => {
+          return result.rows;
+        })
+        .catch((error) => {
+          throw new Error(error);
+        });
+      return rawProducts;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async getProductInfo(
     client: PoolClient,
     productId: number
@@ -11,7 +35,8 @@ export default class ProductDAO {
     let product: Product | null = null;
     try {
       const queryGetProducts = {
-        text: `select p.id, p.product_name, p.product_desc, p.product_image, p.product_price
+        text: `select p.id, p.product_name, p.product_desc, p.product_image, p.product_price,
+                  (select sum(qty_remaining) from products_history ph where ph.product_id = p.id) as qty_remaining
                 from products p 
                 where p.id = $1`,
         values: [productId],
@@ -32,7 +57,8 @@ export default class ProductDAO {
           raw[0].product_name,
           raw[0].product_desc,
           raw[0].product_image,
-          raw[0].product_price
+          raw[0].product_price,
+          raw[0].qty_remaining
         );
       }
     } catch (error) {
@@ -77,7 +103,12 @@ export default class ProductDAO {
     return listProductStocks;
   }
 
-  static async addProductStock(client: PoolClient, productId: number, qty:number, userId:number) {
+  static async addProductStock(
+    client: PoolClient,
+    productId: number,
+    qty: number,
+    userId: number
+  ) {
     try {
       const queryaddProductStock = {
         text: `insert into products_history (product_id, qty, qty_remaining, create_by) values ($1, $2, $3, $4)`,
