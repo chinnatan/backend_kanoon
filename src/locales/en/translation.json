@@ -1,4 +1,18 @@
 {
-    "MSG_USER_NOT_FOUND" : "User not found.",
-    "MSG_MISSING_USER_OR_PASS" : "Please enter username or password."
+  "EXCEPTION": {
+    "REQUIRE_DATA": "[en]กรุณากรอกข้อมูลให้ครบถ้วน",
+    "INVALID_DATE": "[en]กรุณากรอกข้อมูลให้ถูกต้อง",
+    "NOT_ENOUGH_PRODUCT": "[en]สินค้าไม่เพียงพอ",
+    "FAIL_SAVE_DATA": "[en]บันทึกข้อมูลไม่สำเร็จ",
+    "NOT_PERMISSION": {
+      "ADD_PRODUCT": "[en]คุณไม่มีสิทธิ์เพิ่มสินค้า",
+      "ADD_CATEGORY": "[en]คุณไม่มีสิทธิ์เพิ่มประเภทสินค้า",
+      "ADD_ORDER": "[en]คุณไม่มีสิทธิ์เพิ่มออเดอร์",
+      "CANCEL_ORDER": "[en]คุณไม่มีสิทธิ์ยกเลิกออเดอร์"
+    }
+  },
+  "SUCCESS": {
+    "SAVED_SUCCESSFULLY": "[en]บันทึกข้อมูลสำเร็จ",
+    "ADD_CATEGORY_SUCCESS": "[en]เพิ่มประเภทสินค้าสำเร็จ"
+  }
 }

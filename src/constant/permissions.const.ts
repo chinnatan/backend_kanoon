@@ -4,6 +4,10 @@ export class PermissionsConstant {
   static DELETE_PRODUCT = 3;
   static EDIT_PRODUCT = 4;
   static ADD_PRODUCT_STOCK = 5;
-  static ADD_PURCHASE = 6;
-  static CANCEL_PURCHASE = 7;
+  static ADD_ORDER = 6;
+  static CANCEL_ORDER = 7;
+  static ADD_CATEOGRY = 8;
+  static EDIT_CATEGORY = 9;
+  static DELETE_CATEGORY = 10;
+  static VIEW_CATEGORY = 11;
 }

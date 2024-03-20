@@ -1,16 +1,27 @@
-import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import express, { Express } from "express";
 import cors, { CorsOptions } from "cors";
 import { loggerUtil } from "./src/util/logger.util";
+import i18NextMiddleware from "i18next-http-middleware";
+import i18next from "i18next";
+import I18NexFsBackend from "i18next-fs-backend";
 
 dotenv.config();
 
+// Setup i18n
+i18next
+  .use(I18NexFsBackend)
+  .use(i18NextMiddleware.LanguageDetector)
+  .init({
+    backend: {
+      loadPath: __dirname + "/src/locales/{{lng}}/{{ns}}.json",
+    },
+    fallbackLng: "th",
+    preload: ["en", "th"],
+  });
+
 const app: Express = express();
 const port = process.env.PORT;
-
-// app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(bodyParser.json());
 
 const origin =
   process.env.NODE_ENV === "development"
@@ -22,15 +33,19 @@ const corsConfig: CorsOptions = {
 };
 
 app.use(cors(corsConfig));
+app.use(i18NextMiddleware.handle(i18next));
 
 import { router as authController } from "./src/controller/auth.controller";
 app.use("/rest/auth", authController);
 
+import { router as categoryController } from "./src/controller/category.controller";
+app.use("/rest/category", categoryController);
+
 import { router as productController } from "./src/controller/product.controller";
 app.use("/rest/product", productController);
 
-import { router as purchaseController } from "./src/controller/purchase.controller";
-app.use("/rest/purchase", purchaseController);
+import { router as orderController } from "./src/controller/order.controller";
+app.use("/rest/order", orderController);
 
 import { router as imageController } from "./src/controller/image.controller";
 app.use("/rest/image", imageController);
